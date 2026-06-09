@@ -51,5 +51,6 @@ jobs:
             echo "Aucun changement."
           else
             git commit -m "Mise à jour des archives ($(date -u +%Y-%m-%d))"
+            git pull --rebase origin main
             git push
           fi
