@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recherche – Archives de la liste RGAA</title>
+<meta name="description" content="Moteur de recherche non officiel dans les archives publiques de la liste de discussion RGAA (Renater).">
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a24;
+    --muted: #50505e;
+    --accent: #20505e;
+    --accent-fg: #ffffff;
+    --border: #c8c8d0;
+    --card: #f4f4f7;
+    --mark-bg: #ffe26f;
+    --mark-fg: #1a1a24;
+    --focus: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161d;
+      --fg: #ececf1;
+      --muted: #b4b4c0;
+      --accent: #8fd0e4;
+      --accent-fg: #10282e;
+      --border: #44444f;
+      --card: #20202a;
+      --mark-bg: #806600;
+      --mark-fg: #ffffff;
+      --focus: #ffb4ab;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.55;
+  }
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    padding: .6em 1em;
+    z-index: 10;
+  }
+  .skip-link:focus { left: .5rem; top: .5rem; }
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap; border: 0;
+  }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  header.site, main, footer.site {
+    max-width: 56rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  header.site { padding-top: 1.5rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  .baseline { color: var(--muted); margin: 0 0 1.25rem; }
+  form[role="search"] {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: .5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  label { font-weight: 600; display: block; margin-bottom: .3rem; }
+  .hint { font-weight: 400; color: var(--muted); font-size: .9rem; }
+  input[type="search"] {
+    width: 100%;
+    font-size: 1.05rem;
+    padding: .55em .7em;
+    border: 1px solid var(--border);
+    border-radius: .35rem;
+    background: var(--bg);
+    color: var(--fg);
+  }
+  fieldset {
+    border: 0; padding: 0; margin: .9rem 0 0;
+    display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center;
+  }
+  legend { font-weight: 600; padding: 0; margin-bottom: .3rem; }
+  fieldset label { font-weight: 400; display: inline-flex; align-items: center; gap: .35rem; margin: 0; }
+  #status { margin: .75rem 0; font-weight: 600; }
+  ol.results { list-style: none; margin: 0; padding: 0; }
+  ol.results > li { margin-bottom: .75rem; }
+  details.thread, article.hit {
+    border: 1px solid var(--border);
+    border-radius: .5rem;
+    background: var(--card);
+  }
+  details.thread > summary {
+    cursor: pointer;
+    padding: .75rem 1rem;
+    font-weight: 600;
+  }
+  details.thread > summary:hover { text-decoration: underline; }
+  .thread-meta { display: block; font-weight: 400; color: var(--muted); font-size: .9rem; }
+  article.msg {
+    border-top: 1px solid var(--border);
+    padding: .75rem 1rem 1rem;
+  }
+  article.hit { padding: .75rem 1rem 1rem; }
+  article.hit h3 { margin: 0 0 .2rem; font-size: 1.05rem; }
+  article.hit h3 a { color: var(--accent); }
+  .msg-head { color: var(--muted); font-size: .9rem; margin: 0 0 .4rem; }
+  .msg-head strong { color: var(--fg); }
+  .body {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    margin: 0;
+    font-family: inherit;
+    font-size: .97rem;
+  }
+  details.fullbody > summary { cursor: pointer; color: var(--accent); margin-top: .3rem; }
+  mark { background: var(--mark-bg); color: var(--mark-fg); }
+  a { color: var(--accent); }
+  .src-link { font-size: .9rem; display: inline-block; margin-top: .5rem; }
+  button.more {
+    display: block;
+    margin: 1.25rem auto;
+    font-size: 1rem;
+    padding: .6em 1.4em;
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: none;
+    border-radius: .4rem;
+    cursor: pointer;
+  }
+  button.more:hover { opacity: .9; }
+  footer.site {
+    margin-top: 2.5rem;
+    padding-bottom: 2rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    color: var(--muted);
+    font-size: .9rem;
+  }
+  .notice {
+    border: 1px solid var(--border);
+    border-left: .35rem solid var(--accent);
+    padding: .6rem 1rem;
+    border-radius: .35rem;
+    background: var(--card);
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu principal</a>
+
+<header class="site">
+  <h1>Archives de la liste RGAA – Recherche</h1>
+  <p class="baseline">Moteur de recherche non officiel dans les
+    <a href="https://groupes.renater.fr/sympa/arc/rgaa">archives publiques de la liste de discussion RGAA</a> (Renater).
+    <span id="updated"></span></p>
+</header>
+
+<main id="main">
+  <form role="search" id="searchform">
+    <label for="q">Rechercher dans les messages
+      <span class="hint">(plein texte : sujets, auteurs et corps des messages ; insensible à la casse et aux accents)</span>
+    </label>
+    <input type="search" id="q" name="q" autocomplete="off"
+           placeholder="Ex. : 10.13, infobulle, aria-required…">
+    <fieldset>
+      <legend>Affichage des résultats</legend>
+      <label><input type="radio" name="view" value="threads" checked> Fils de discussion</label>
+      <label><input type="radio" name="view" value="messages"> Messages individuels</label>
+    </fieldset>
+  </form>
+
+  <h2 class="sr-only">Résultats</h2>
+  <p id="status" role="status" aria-live="polite">Chargement des données…</p>
+  <ol class="results" id="results"></ol>
+  <button type="button" class="more" id="more" hidden>Afficher plus de résultats</button>
+</main>
+
+<footer class="site">
+  <p class="notice">Site non officiel, sans lien avec la DINUM ni Renater.
+    Les contenus appartiennent à leurs auteurs et autrices ; chaque résultat renvoie vers le message
+    original sur les archives Renater.</p>
+  <p>Données mises à jour automatiquement chaque semaine.</p>
+</footer>
+
+<script>
+"use strict";
+const PAGE_THREADS = 25;
+const PAGE_MSGS = 50;
+const ARC = "https://groupes.renater.fr/sympa/arc/rgaa/";
+
+let DATA = [];        // messages bruts
+let THREADS = [];     // fils regroupés
+let shown = 0;        // pagination
+let current = { threads: [], msgs: [], tokens: [] };
+
+const $q = document.getElementById("q");
+const $results = document.getElementById("results");
+const $status = document.getElementById("status");
+const $more = document.getElementById("more");
+
+const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function threadKey(subject) {
+  let s = norm(subject), prev;
+  do {
+    prev = s;
+    s = s.replace(/^\s*(\[rgaa\]|(re|fwd|fw|tr)\s*:)\s*/, "");
+  } while (s !== prev);
+  return s.replace(/\s+/g, " ").trim();
+}
+
+function fmtDate(iso) {
+  if (!iso) return "date inconnue";
+  const d = new Date(iso);
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function msgUrl(id) { return ARC + id + ".html"; }
+
+function highlight(text, tokens) {
+  let safe = esc(text);
+  if (!tokens.length) return safe;
+  // surligne chaque token (comparaison sans accents)
+  const nsafe = norm(safe);
+  const ranges = [];
+  for (const t of tokens) {
+    let i = 0;
+    while ((i = nsafe.indexOf(t, i)) !== -1) {
+      ranges.push([i, i + t.length]);
+      i += t.length;
+    }
+  }
+  if (!ranges.length) return safe;
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged = [ranges[0]];
+  for (const r of ranges.slice(1)) {
+    const last = merged[merged.length - 1];
+    if (r[0] <= last[1]) last[1] = Math.max(last[1], r[1]);
+    else merged.push(r);
+  }
+  let out = "", prev = 0;
+  for (const [a, b] of merged) {
+    out += safe.slice(prev, a) + "<mark>" + safe.slice(a, b) + "</mark>";
+    prev = b;
+  }
+  return out + safe.slice(prev);
+}
+
+function excerpt(body, tokens, len = 320) {
+  const nbody = norm(body);
+  let pos = -1;
+  for (const t of tokens) {
+    const i = nbody.indexOf(t);
+    if (i !== -1 && (pos === -1 || i < pos)) pos = i;
+  }
+  if (pos === -1) return body.slice(0, len) + (body.length > len ? "…" : "");
+  const start = Math.max(0, pos - Math.floor(len / 3));
+  const end = Math.min(body.length, start + len);
+  return (start > 0 ? "…" : "") + body.slice(start, end) + (end < body.length ? "…" : "");
+}
+
+function buildThreads() {
+  const map = new Map();
+  for (const m of DATA) {
+    const key = m._tk;
+    if (!map.has(key)) map.set(key, { key, msgs: [] });
+    map.get(key).msgs.push(m);
+  }
+  THREADS = [...map.values()];
+  for (const t of THREADS) {
+    t.msgs.sort((a, b) => (a.d || "") < (b.d || "") ? -1 : 1);
+    t.subject = t.msgs[0].s.replace(/^\s*\[rgaa\]\s*/i, "");
+    t.first = t.msgs[0].d;
+    t.last = t.msgs[t.msgs.length - 1].d;
+  }
+  THREADS.sort((a, b) => (a.last || "") > (b.last || "") ? -1 : 1);
+}
+
+function search(query) {
+  const tokens = norm(query).split(/\s+/).filter(Boolean);
+  current.tokens = tokens;
+  if (!tokens.length) {
+    current.msgs = DATA;
+    current.threads = THREADS;
+  } else {
+    current.msgs = DATA.filter(m => tokens.every(t => m._n.includes(t)));
+    const keys = new Set(current.msgs.map(m => m._tk));
+    current.threads = THREADS.filter(t => keys.has(t.key));
+  }
+}
+
+function viewMode() {
+  return document.querySelector('input[name="view"]:checked').value;
+}
+
+function renderMessage(m, tokens, full) {
+  const body = full ? m.b : excerpt(m.b, tokens);
+  const long = full && m.b.length > 800;
+  const bodyHtml = '<p class="body">' + highlight(body, tokens) + "</p>";
+  return `
+    <p class="msg-head"><strong>${esc(m.a)}</strong> – ${fmtDate(m.d)}</p>
+    ${long ? `<details class="fullbody"><summary>Lire le message (${Math.round(m.b.length / 1000)} k caractères)</summary>${bodyHtml}</details>`
+           : bodyHtml}
+    <a class="src-link" href="${msgUrl(m.id)}">Voir ce message sur les archives Renater</a>`;
+}
+
+function render(append) {
+  const tokens = current.tokens;
+  const mode = viewMode();
+  if (!append) { $results.innerHTML = ""; shown = 0; }
+  const page = mode === "threads" ? PAGE_THREADS : PAGE_MSGS;
+  const items = mode === "threads" ? current.threads : current.msgs;
+  const slice = items.slice(shown, shown + page);
+  const frag = document.createDocumentFragment();
+
+  for (const item of slice) {
+    const li = document.createElement("li");
+    if (mode === "threads") {
+      const t = item;
+      const n = t.msgs.length;
+      const dates = t.first === t.last ? fmtDate(t.first) : fmtDate(t.first) + " → " + fmtDate(t.last);
+      li.innerHTML = `<details class="thread">
+        <summary>${highlight(t.subject, tokens)}
+          <span class="thread-meta">${n} message${n > 1 ? "s" : ""} · ${dates}</span>
+        </summary>
+        ${t.msgs.map(m => `<article class="msg">${renderMessage(m, tokens, true)}</article>`).join("")}
+      </details>`;
+    } else {
+      const m = item;
+      li.innerHTML = `<article class="hit">
+        <h3><a href="${msgUrl(m.id)}">${highlight(m.s, tokens)}</a></h3>
+        ${renderMessage(m, tokens, false)}
+      </article>`;
+    }
+    frag.appendChild(li);
+  }
+  $results.appendChild(frag);
+  shown += slice.length;
+  $more.hidden = shown >= items.length;
+
+  const nt = current.threads.length, nm = current.msgs.length;
+  $status.textContent = tokens.length
+    ? `${nm} message${nm > 1 ? "s" : ""} dans ${nt} fil${nt > 1 ? "s" : ""} de discussion pour cette recherche.`
+    : `${nm} messages dans ${nt} fils de discussion au total.`;
+}
+
+let timer;
+$q.addEventListener("input", () => {
+  clearTimeout(timer);
+  timer = setTimeout(() => { search($q.value); render(false); }, 250);
+});
+document.getElementById("searchform").addEventListener("submit", e => {
+  e.preventDefault();
+  search($q.value); render(false);
+});
+for (const r of document.querySelectorAll('input[name="view"]')) {
+  r.addEventListener("change", () => render(false));
+}
+$more.addEventListener("click", () => render(true));
+
+fetch("data/messages.json")
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(json => {
+    DATA = json.messages;
+    for (const m of DATA) {
+      m._n = norm(m.s + " " + m.a + " " + m.b);
+      m._tk = threadKey(m.s);
+    }
+    buildThreads();
+    if (json.updated) {
+      document.getElementById("updated").textContent =
+        "Dernière mise à jour des données : " + fmtDate(json.updated) + ".";
+    }
+    if (json.sample) {
+      $status.insertAdjacentHTML("beforebegin",
+        '<p class="notice">Données d’exemple : lancez le workflow GitHub Actions pour récupérer l’historique complet.</p>');
+    }
+    search("");
+    render(false);
+  })
+  .catch(err => {
+    $status.textContent = "Impossible de charger les données (" + err.message + "). " +
+      "Si vous ouvrez ce fichier en local, servez-le via un petit serveur web : python3 -m http.server";
+  });
+</script>
+</body>
+</html>
