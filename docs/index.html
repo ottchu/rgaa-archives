@@ -114,6 +114,13 @@
   }
   details.thread > summary:hover { text-decoration: underline; }
   .thread-meta { display: block; font-weight: 400; color: var(--muted); font-size: .9rem; }
+  .thread-sum {
+    border-top: 1px solid var(--border);
+    margin: 0;
+    padding: .75rem 1rem;
+    font-size: .95rem;
+    background: var(--bg);
+  }
   article.msg {
     border-top: 1px solid var(--border);
     padding: .75rem 1rem 1rem;
@@ -228,6 +235,7 @@ const ARC = "https://groupes.renater.fr/sympa/arc/rgaa/";
 
 let DATA = [];        // messages bruts
 let THREADS = [];     // fils regroupés
+let SUM = {};         // résumés IA par clé de fil
 let shown = 0;        // pagination
 let current = { threads: [], msgs: [], tokens: [] };
 
@@ -387,10 +395,12 @@ function render(append) {
       const t = item;
       const n = t.msgs.length;
       const dates = t.first === t.last ? fmtDate(t.first) : fmtDate(t.first) + " → " + fmtDate(t.last);
+      const sum = SUM[t.key] && SUM[t.key].s;
       li.innerHTML = `<details class="thread">
         <summary>${highlight(t.subject, tokens)}
           <span class="thread-meta">${n} message${n > 1 ? "s" : ""} · ${dates}</span>
         </summary>
+        ${sum ? `<p class="thread-sum"><strong>Résumé :</strong> ${esc(sum)}</p>` : ""}
         ${t.msgs.map(m => `<article class="msg">${renderMessage(m, tokens, true)}</article>`).join("")}
       </details>`;
     } else {
@@ -429,9 +439,15 @@ for (const sel of [$from, $to]) {
 }
 $more.addEventListener("click", () => render(true));
 
-fetch("data/messages.json")
-  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-  .then(json => {
+Promise.all([
+  fetch("data/messages.json")
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+  fetch("data/summaries.json")
+    .then(r => r.ok ? r.json() : {})
+    .catch(() => ({}))
+])
+  .then(([json, summaries]) => {
+    SUM = summaries || {};
     DATA = json.messages;
     for (const m of DATA) {
       m._n = norm(m.s + " " + m.a + " " + m.b);
