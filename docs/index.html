@@ -91,6 +91,14 @@
   }
   legend { font-weight: 600; padding: 0; margin-bottom: .3rem; }
   fieldset label { font-weight: 400; display: inline-flex; align-items: center; gap: .35rem; margin: 0; }
+  select {
+    font-size: 1rem;
+    padding: .4em .6em;
+    border: 1px solid var(--border);
+    border-radius: .35rem;
+    background: var(--bg);
+    color: var(--fg);
+  }
   #status { margin: .75rem 0; font-weight: 600; }
   ol.results { list-style: none; margin: 0; padding: 0; }
   ol.results > li { margin-bottom: .75rem; }
@@ -172,6 +180,13 @@
     </label>
     <input type="search" id="q" name="q" autocomplete="off"
            placeholder="Ex. : 10.13, infobulle, aria-required…">
+    <fieldset>
+      <legend>Période</legend>
+      <label for="from">De</label>
+      <select id="from"><option value="">Début des archives</option></select>
+      <label for="to">à</label>
+      <select id="to"><option value="">Aujourd’hui</option></select>
+    </fieldset>
     <fieldset>
       <legend>Affichage des résultats</legend>
       <label><input type="radio" name="view" value="threads" checked> Fils de discussion</label>
@@ -287,14 +302,38 @@ function buildThreads() {
   THREADS.sort((a, b) => (a.last || "") > (b.last || "") ? -1 : 1);
 }
 
+const $from = document.getElementById("from");
+const $to = document.getElementById("to");
+
+function populatePeriod() {
+  const months = [...new Set(DATA.map(m => m.id.slice(0, 7)))].sort();
+  const fmt = mo => {
+    const d = new Date(mo + "-15T12:00:00");
+    return d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  };
+  const opts = months.map(mo => `<option value="${mo}">${fmt(mo)}</option>`).join("");
+  $from.innerHTML = '<option value="">Début des archives</option>' + opts;
+  $to.innerHTML = '<option value="">Aujourd’hui</option>' + opts;
+}
+
 function search(query) {
   const tokens = norm(query).split(/\s+/).filter(Boolean);
   current.tokens = tokens;
-  if (!tokens.length) {
-    current.msgs = DATA;
+  const from = $from.value, to = $to.value;
+  let pool = DATA;
+  if (from || to) {
+    pool = pool.filter(m => {
+      const mo = m.id.slice(0, 7);
+      return (!from || mo >= from) && (!to || mo <= to);
+    });
+  }
+  current.msgs = tokens.length
+    ? pool.filter(m => tokens.every(t => m._n.includes(t)))
+    : pool;
+  current.filtered = Boolean(tokens.length || from || to);
+  if (!current.filtered) {
     current.threads = THREADS;
   } else {
-    current.msgs = DATA.filter(m => tokens.every(t => m._n.includes(t)));
     const keys = new Set(current.msgs.map(m => m._tk));
     current.threads = THREADS.filter(t => keys.has(t.key));
   }
@@ -350,7 +389,7 @@ function render(append) {
   $more.hidden = shown >= items.length;
 
   const nt = current.threads.length, nm = current.msgs.length;
-  $status.textContent = tokens.length
+  $status.textContent = current.filtered
     ? `${nm} message${nm > 1 ? "s" : ""} dans ${nt} fil${nt > 1 ? "s" : ""} de discussion pour cette recherche.`
     : `${nm} messages dans ${nt} fils de discussion au total.`;
 }
@@ -367,6 +406,9 @@ document.getElementById("searchform").addEventListener("submit", e => {
 for (const r of document.querySelectorAll('input[name="view"]')) {
   r.addEventListener("change", () => render(false));
 }
+for (const sel of [$from, $to]) {
+  sel.addEventListener("change", () => { search($q.value); render(false); });
+}
 $more.addEventListener("click", () => render(true));
 
 fetch("data/messages.json")
@@ -378,6 +420,7 @@ fetch("data/messages.json")
       m._tk = threadKey(m.s);
     }
     buildThreads();
+    populatePeriod();
     if (json.updated) {
       document.getElementById("updated").textContent =
         "Dernière mise à jour des données : " + fmtDate(json.updated) + ".";
