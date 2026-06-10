@@ -146,6 +146,18 @@
     cursor: pointer;
   }
   button.more:hover { opacity: .9; }
+  .submit-btn {
+    display: inline-block;
+    margin-top: 1rem;
+    font-size: 1rem;
+    padding: .55em 1.4em;
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: none;
+    border-radius: .4rem;
+    cursor: pointer;
+  }
+  .submit-btn:hover { opacity: .9; }
   footer.site {
     margin-top: 2.5rem;
     padding-bottom: 2rem;
@@ -192,6 +204,7 @@
       <label><input type="radio" name="view" value="threads" checked> Fils de discussion</label>
       <label><input type="radio" name="view" value="messages"> Messages individuels</label>
     </fieldset>
+    <button type="submit" class="submit-btn">Lancer la recherche</button>
   </form>
 
   <h2 class="sr-only">Résultats</h2>
@@ -226,13 +239,18 @@ const $more = document.getElementById("more");
 const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-function threadKey(subject) {
-  let s = norm(subject), prev;
+function cleanSubject(s) {
+  // retire en boucle les préfixes : [rgaa], [PUB], Re:, RE:, Fwd:, TR:, Rép:…
+  let out = (s || "").trim(), prev;
   do {
-    prev = s;
-    s = s.replace(/^\s*(\[rgaa\]|(re|fwd|fw|tr)\s*:)\s*/, "");
-  } while (s !== prev);
-  return s.replace(/\s+/g, " ").trim();
+    prev = out;
+    out = out.replace(/^(\[[^\]]*\]|(re|fwd|fw|tr|rep|rép)\s*:)\s*/i, "");
+  } while (out !== prev);
+  return out || "(sans sujet)";
+}
+
+function threadKey(subject) {
+  return norm(cleanSubject(subject)).replace(/\s+/g, " ").trim();
 }
 
 function fmtDate(iso) {
@@ -295,7 +313,7 @@ function buildThreads() {
   THREADS = [...map.values()];
   for (const t of THREADS) {
     t.msgs.sort((a, b) => (a.d || "") < (b.d || "") ? -1 : 1);
-    t.subject = t.msgs[0].s.replace(/^\s*\[rgaa\]\s*/i, "");
+    t.subject = cleanSubject(t.msgs[0].s);
     t.first = t.msgs[0].d;
     t.last = t.msgs[t.msgs.length - 1].d;
   }
@@ -378,7 +396,7 @@ function render(append) {
     } else {
       const m = item;
       li.innerHTML = `<article class="hit">
-        <h3><a href="${msgUrl(m.id)}">${highlight(m.s, tokens)}</a></h3>
+        <h3><a href="${msgUrl(m.id)}">${highlight(cleanSubject(m.s), tokens)}</a></h3>
         ${renderMessage(m, tokens, false)}
       </article>`;
     }
