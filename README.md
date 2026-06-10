@@ -33,6 +33,18 @@ Le scraper est incrémental : chaque semaine il ne récupère que les mois nouve
 
 C'est tout. Ensuite, chaque lundi matin, le site se met à jour seul.
 
+## Résumés IA des conversations (optionnel)
+
+Si une clé API Anthropic est configurée, chaque fil de discussion affiche un résumé de 2 phrases (question posée + réponse retenue), généré par le modèle Claude Haiku. Seuls les fils nouveaux ou modifiés sont résumés à chaque mise à jour hebdomadaire (cache dans `docs/data/summaries.json`).
+
+Pour l'activer :
+
+1. Créer une clé API sur [console.anthropic.com](https://console.anthropic.com) (Settings → API keys) et y mettre quelques euros de crédit. Le premier passage sur ~450 fils coûte environ 2 €, puis quelques centimes par semaine.
+2. Dans le dépôt GitHub : Settings → Secrets and variables → Actions → « New repository secret ». Nom : `ANTHROPIC_API_KEY`, valeur : la clé. Save.
+3. Lancer le workflow manuellement (Actions → Run workflow) ou attendre le lundi suivant.
+
+Sans clé, le site fonctionne normalement, simplement sans résumés.
+
 ## Lancer le scraper en local (optionnel)
 
 ```bash
